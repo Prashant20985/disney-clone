@@ -7,7 +7,9 @@ import {
   selectUserEmail,
   selectUserPhoto,
   setUserLoginDetails,
+  setSignOutState,
 } from "../features/users/userSlice";
+import { useEffect } from "react";
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -15,6 +17,15 @@ const Header = () => {
   const userName = useSelector(selectUserName);
   // const userEmail = useSelector(selectUserEmail);
   const userPhoto = useSelector(selectUserPhoto);
+
+  useEffect(() => {
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setUser(user);
+        history.push("/home");
+      }
+    });
+  }, [userName]);
 
   const setUser = (user) => {
     dispatch(
@@ -27,12 +38,19 @@ const Header = () => {
   };
 
   const handleAuth = () => {
+    if(!userName){
     auth
       .signInWithPopup(provider)
       .then((res) => {
         setUser(res.user);
       })
       .catch((e) => alert(e.message));
+    }else if (userName) {
+      auth.signOut().then(() => {
+        dispatch(setSignOutState())
+        history.push("/")
+      }).catch((e) => alert(e.message))
+    }
   };
   return (
     <Nav>
@@ -69,7 +87,12 @@ const Header = () => {
               <span>SERIES</span>
             </a>
           </NavMenu>
-          <UserImage src={userPhoto} alt={userName}/>
+          <SignOut>
+            <UserImage src={userPhoto} alt={userName} />
+            <Dropdown>
+              <span onClick={handleAuth}>Sign Out</span>
+            </Dropdown>
+          </SignOut>
         </>
       )}
     </Nav>
@@ -158,9 +181,9 @@ const NavMenu = styled.div`
       }
     }
   }
-  /* @media (max-width: 768px) {
+  @media (max-width: 768px) {
     display: none;
-  } */
+  }
 `;
 
 const Login = styled.a`
@@ -181,6 +204,43 @@ const Login = styled.a`
 
 const UserImage = styled.img`
   height: 100%;
+`;
+
+const Dropdown = styled.div`
+  position: absolute;
+  top: 48px;
+  right: 0px;
+  background: rgb(19, 19, 19);
+  border: 1px solid rgba(151, 151, 151, 0.34);
+  border-radius: 4px;
+  box-shadow: rgb(0 0 0 / 50%) 0px 0px 18px 0px;
+  padding: 10px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  width: 100px;
+  opacity: 0;
+`;
+
+const SignOut = styled.div`
+  position: relative;
+  height: 48px;
+  width: 48px;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+
+  ${UserImage} {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+  }
+  &:hover {
+    ${Dropdown} {
+      opacity: 1;
+      transition-duration: 1s;
+    }
+  }
 `;
 
 export default Header;
